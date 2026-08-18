@@ -6,11 +6,11 @@ const { upload } = require('../services/fileStorage');
 
 const router = express.Router();
 
-router.use(requireAuth);
-
-router.post('/content', upload.single('file'), contentController.create);
-router.get('/content', contentController.list);
-router.get('/content/:id', contentController.getOne);
-router.delete('/content/:id', contentController.remove);
+// Auth per-route only — never router.use(requireAuth) on a router
+// mounted at /api (it would block /api/admin, /api/auth, etc.)
+router.post('/content', requireAuth, upload.single('file'), contentController.create);
+router.get('/content', requireAuth, contentController.list);
+router.get('/content/:id', requireAuth, contentController.getOne);
+router.delete('/content/:id', requireAuth, contentController.remove);
 
 module.exports = router;
