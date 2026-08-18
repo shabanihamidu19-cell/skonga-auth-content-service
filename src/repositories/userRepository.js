@@ -17,10 +17,32 @@ function findByEmail(email) {
   return db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email) || null;
 }
 
-/**
- * Firebase (or any external) UID → local user row so quotas/FK work.
- * password_hash is a placeholder; login still goes through Firebase.
- */
+function listUsers({ limit = 100, offset = 0 } = {}) {
+  const lim = Math.min(500, Math.max(1, Number(limit) || 100));
+  const off = Math.max(0, Number(offset) || 0);
+  // node:sqlite + JSON adapter
+  try {
+    return db
+      .prepare(
+        `SELECT id, email, name, status, created_at, updated_at
+         FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`
+      )
+      .all(lim, off);
+  } catch {
+    // JSON fallback may not support this SQL shape — best effort
+    return [];
+  }
+}
+
+function countUsers() {
+  try {
+    const row = db.prepare('SELECT COUNT(*) AS n FROM users').get();
+    return row ? Number(row.n) : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function ensureShadowUser(userId, { email, name } = {}) {
   if (!userId || typeof userId !== 'string') return null;
   const id = userId.slice(0, 128);
@@ -28,9 +50,9 @@ function ensureShadowUser(userId, { email, name } = {}) {
   if (existing) return existing;
   const now = Date.now();
   const safeEmail =
-    (email && String(email).includes('@')
+    email && String(email).includes('@')
       ? String(email).toLowerCase()
-      : `fb_${id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40)}@firebase.local`);
+      : `fb_${id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40)}@firebase.local`;
   try {
     return create({
       id,
@@ -40,7 +62,6 @@ function ensureShadowUser(userId, { email, name } = {}) {
       now,
     });
   } catch (err) {
-    // race / unique email
     return findById(id) || findByEmail(safeEmail);
   }
 }
@@ -57,4 +78,12 @@ function publicUser(row) {
   };
 }
 
-module.exports = { create, findById, findByEmail, ensureShadowUser, publicUser };
+module.exports = {
+  create,
+  findById,
+  findByEmail,
+  listUsers,
+  countUsers,
+  ensureShadowUser,
+  publicUser,
+};
