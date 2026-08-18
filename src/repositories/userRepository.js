@@ -17,6 +17,34 @@ function findByEmail(email) {
   return db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email) || null;
 }
 
+/**
+ * Firebase (or any external) UID → local user row so quotas/FK work.
+ * password_hash is a placeholder; login still goes through Firebase.
+ */
+function ensureShadowUser(userId, { email, name } = {}) {
+  if (!userId || typeof userId !== 'string') return null;
+  const id = userId.slice(0, 128);
+  const existing = findById(id);
+  if (existing) return existing;
+  const now = Date.now();
+  const safeEmail =
+    (email && String(email).includes('@')
+      ? String(email).toLowerCase()
+      : `fb_${id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40)}@firebase.local`);
+  try {
+    return create({
+      id,
+      email: safeEmail.slice(0, 180),
+      passwordHash: 'FIREBASE_SHADOW_NO_PASSWORD',
+      name: (name || '').slice(0, 80),
+      now,
+    });
+  } catch (err) {
+    // race / unique email
+    return findById(id) || findByEmail(safeEmail);
+  }
+}
+
 function publicUser(row) {
   if (!row) return null;
   return {
@@ -29,4 +57,4 @@ function publicUser(row) {
   };
 }
 
-module.exports = { create, findById, findByEmail, publicUser };
+module.exports = { create, findById, findByEmail, ensureShadowUser, publicUser };
