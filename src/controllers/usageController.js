@@ -1,5 +1,12 @@
 'use strict';
 const usageService = require('../services/usageService');
+const userRepo = require('../repositories/userRepository');
+const subRepo = require('../repositories/subscriptionRepository');
+
+function ensureIdentity(userId) {
+  userRepo.ensureShadowUser(String(userId));
+  subRepo.ensureFree(String(userId));
+}
 
 async function getSnapshot(req, res, next) {
   try {
@@ -26,6 +33,7 @@ async function internalRecord(req, res, next) {
     if (!userId || !action) {
       return res.status(400).json({ error: 'userId and action required', code: 'BAD_REQUEST' });
     }
+    ensureIdentity(userId);
     const before = usageService.assertAllowed(userId, action);
     const after = usageService.recordUsage(userId, action, units || 1, metadata || {});
     res.json({ ok: true, before, after });
@@ -42,6 +50,7 @@ async function internalCheck(req, res, next) {
     const userId = (req.query.userId || req.body?.userId || '').toString();
     const action = (req.query.action || req.body?.action || 'chat').toString();
     if (!userId) return res.status(400).json({ error: 'userId required' });
+    ensureIdentity(userId);
     res.json(usageService.checkQuota(userId, action));
   } catch (err) {
     next(err);
