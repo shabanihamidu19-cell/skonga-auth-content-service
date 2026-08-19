@@ -10,20 +10,25 @@ function validateEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
 async function signup({ email, password, name }) {
-  if (!validateEmail(email)) throw new AppError('Invalid email', 400, 'INVALID_EMAIL');
+  const normEmail = normalizeEmail(email);
+  if (!validateEmail(normEmail)) throw new AppError('Invalid email', 400, 'INVALID_EMAIL');
   if (!password || String(password).length < 6) {
     throw new AppError('Password must be at least 6 characters', 400, 'WEAK_PASSWORD');
   }
-  const existing = userRepo.findByEmail(email);
+  const existing = userRepo.findByEmail(normEmail);
   if (existing) throw new AppError('Email already registered', 409, 'EMAIL_EXISTS');
 
   const now = Date.now();
   const id = uuidv4();
-  const passwordHash = await hashPassword(password);
+  const passwordHash = await hashPassword(String(password));
   const user = userRepo.create({
     id,
-    email: email.trim().toLowerCase(),
+    email: normEmail,
     passwordHash,
     name: (name || '').trim().slice(0, 80),
     now,
@@ -35,14 +40,19 @@ async function signup({ email, password, name }) {
 }
 
 async function login({ email, password }) {
-  if (!validateEmail(email) || !password) {
+  const normEmail = normalizeEmail(email);
+  if (!validateEmail(normEmail) || password == null || password === '') {
     throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   }
-  const user = userRepo.findByEmail(email);
+  const user = userRepo.findByEmail(normEmail);
   if (!user || user.status !== 'active') {
     throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   }
-  const ok = await verifyPassword(password, user.password_hash);
+  // Reject shadow Firebase rows that cannot log in with password
+  if (user.password_hash === 'FIREBASE_SHADOW_NO_PASSWORD') {
+    throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+  }
+  const ok = await verifyPassword(String(password), user.password_hash);
   if (!ok) throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
 
   subRepo.ensureFree(user.id);
@@ -65,4 +75,4 @@ function me(userId) {
   };
 }
 
-module.exports = { signup, login, me };
+module.exports = { signup, login, me, normalizeEmail };
