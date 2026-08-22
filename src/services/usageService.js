@@ -7,50 +7,61 @@ const { AppError } = require('../utils/errors');
 
 const ACTIONS = new Set(['chat', 'scan', 'image_generation', 'rag_query', 'file_analysis']);
 
-function getPlanKey(userId) {
-  const sub = subRepo.ensureFree(userId);
+async function getPlanKey(userId) {
+  const sub = await subRepo.ensureFree(userId);
   return subRepo.isProActive(sub) ? 'pro' : 'free';
 }
 
-function limitFor(userId, action) {
-  const plan = getPlanKey(userId);
+async function limitFor(userId, action) {
+  const plan = await getPlanKey(userId);
   const table = env.quotas[plan] || env.quotas.free;
   const lim = table[action];
   return lim === undefined ? env.quotas.free.chat : lim;
 }
 
-function checkQuota(userId, action) {
+async function checkQuota(userId, action) {
   if (!ACTIONS.has(action)) {
     throw new AppError('Unknown usage action', 400, 'INVALID_ACTION');
   }
-  const limit = limitFor(userId, action);
+  const limit = await limitFor(userId, action);
+  const plan = await getPlanKey(userId);
   if (limit === 0) {
-    return { allowed: true, used: usageRepo.sumToday(userId, action), limit: 0, remaining: null, plan: getPlanKey(userId) };
+    return {
+      allowed: true,
+      used: await usageRepo.sumToday(userId, action),
+      limit: 0,
+      remaining: null,
+      plan,
+    };
   }
-  const used = usageRepo.sumToday(userId, action);
+  const used = await usageRepo.sumToday(userId, action);
   const remaining = Math.max(0, limit - used);
   return {
     allowed: used < limit,
     used,
     limit,
     remaining,
-    plan: getPlanKey(userId),
+    plan,
   };
 }
 
-function assertAllowed(userId, action) {
-  const q = checkQuota(userId, action);
+async function assertAllowed(userId, action) {
+  const q = await checkQuota(userId, action);
   if (!q.allowed) {
-    const err = new AppError('Daily free limit reached. Upgrade to Pro to continue.', 403, 'QUOTA_EXCEEDED');
+    const err = new AppError(
+      'Daily free limit reached. Upgrade to Pro to continue.',
+      403,
+      'QUOTA_EXCEEDED'
+    );
     err.quota = q;
     throw err;
   }
   return q;
 }
 
-function recordUsage(userId, action, units = 1, metadata = {}) {
+async function recordUsage(userId, action, units = 1, metadata = {}) {
   if (!ACTIONS.has(action)) throw new AppError('Unknown usage action', 400, 'INVALID_ACTION');
-  usageRepo.record({
+  await usageRepo.record({
     id: uuidv4(),
     userId,
     action,
@@ -61,12 +72,12 @@ function recordUsage(userId, action, units = 1, metadata = {}) {
   return checkQuota(userId, action);
 }
 
-function snapshot(userId) {
+async function snapshot(userId) {
   const actions = [...ACTIONS];
-  const plan = getPlanKey(userId);
+  const plan = await getPlanKey(userId);
   const items = {};
   for (const a of actions) {
-    items[a] = checkQuota(userId, a);
+    items[a] = await checkQuota(userId, a);
   }
   return { plan, items };
 }
