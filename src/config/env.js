@@ -13,6 +13,7 @@ const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  databaseUrl: process.env.DATABASE_URL || '',
   databasePath: process.env.DATABASE_PATH || './data/skonga.sqlite',
   uploadDir: process.env.UPLOAD_DIR || './data/uploads',
   maxUploadMb: int('MAX_UPLOAD_MB', 8),
@@ -37,6 +38,12 @@ if (!env.jwtSecret || env.jwtSecret === 'change-me-to-a-long-random-secret') {
   if (env.nodeEnv === 'production') {
     console.warn('[env] JWT_SECRET is missing or weak — set a strong secret before production');
   }
+}
+
+if (env.nodeEnv === 'production' && !env.databaseUrl) {
+  console.warn(
+    '[env] DATABASE_URL not set — SQLite on ephemeral disk may lose users on redeploy'
+  );
 }
 
 module.exports = env;
