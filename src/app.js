@@ -1,9 +1,8 @@
 'use strict';
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const env = require('./config/env');
-require('./config/db'); // init schema
+const db = require('./config/db');
 
 const authRoutes = require('./routes/authRoutes');
 const contentRoutes = require('./routes/contentRoutes');
@@ -27,18 +26,28 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors({
-  origin: true,
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Service-Token'],
-}));
+app.use(
+  cors({
+    origin: true,
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Service-Token'],
+  })
+);
 app.use(express.json({ limit: '2mb' }));
 app.use(apiLimiter);
 
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+app.get('/health', async (req, res) => {
+  let dbOk = false;
+  try {
+    dbOk = await db.ping();
+  } catch {
+    dbOk = false;
+  }
+  res.status(dbOk ? 200 : 503).json({
+    status: dbOk ? 'ok' : 'degraded',
     service: 'skonga-auth-content',
+    db: db.driver,
+    durable: db.driver === 'postgres',
     time: new Date().toISOString(),
   });
 });
