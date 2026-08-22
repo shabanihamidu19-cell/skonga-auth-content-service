@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const usageRoutes = require('./routes/usageRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const learnRoutes = require('./routes/learnRoutes');
 const { apiLimiter } = require('./middleware/rateLimitMiddleware');
 const { errorMiddleware } = require('./utils/errors');
 const { uploadRoot } = require('./services/fileStorage');
@@ -48,6 +49,7 @@ app.get('/health', async (req, res) => {
     service: 'skonga-auth-content',
     db: db.driver,
     durable: db.driver === 'postgres',
+    learn: true,
     time: new Date().toISOString(),
   });
 });
@@ -56,6 +58,7 @@ app.use('/api', authRoutes);
 app.use('/api', contentRoutes);
 app.use('/api', usageRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', learnRoutes);
 
 app.use('/files', express.static(uploadRoot));
 
