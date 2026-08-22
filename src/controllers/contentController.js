@@ -13,7 +13,7 @@ async function create(req, res, next) {
       mimeType = req.file.mimetype;
       size = req.file.size;
     }
-    const item = contentService.createContent(req.user.id, {
+    const item = await contentService.createContent(req.user.id, {
       type: type || (req.file ? 'image' : 'chat'),
       title,
       body,
@@ -30,7 +30,7 @@ async function create(req, res, next) {
 
 async function list(req, res, next) {
   try {
-    const items = contentService.listContent(req.user.id, req.query);
+    const items = await contentService.listContent(req.user.id, req.query);
     res.json({ items });
   } catch (err) {
     next(err);
@@ -39,7 +39,7 @@ async function list(req, res, next) {
 
 async function getOne(req, res, next) {
   try {
-    const item = contentService.getContent(req.user.id, req.params.id);
+    const item = await contentService.getContent(req.user.id, req.params.id);
     res.json({ content: item });
   } catch (err) {
     next(err);
@@ -48,7 +48,7 @@ async function getOne(req, res, next) {
 
 async function remove(req, res, next) {
   try {
-    const result = contentService.deleteContent(req.user.id, req.params.id);
+    const result = await contentService.deleteContent(req.user.id, req.params.id);
     res.json(result);
   } catch (err) {
     next(err);
