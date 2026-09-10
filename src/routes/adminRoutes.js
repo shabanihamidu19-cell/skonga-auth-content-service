@@ -2,6 +2,7 @@
 const express = require('express');
 const userRepo = require('../repositories/userRepository');
 const subRepo = require('../repositories/subscriptionRepository');
+const analyticsService = require('../services/analyticsService');
 const { requireServiceToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -37,6 +38,19 @@ router.get('/admin/stats', requireServiceToken, async (req, res, next) => {
       users: await userRepo.countUsers(),
       time: new Date().toISOString(),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Phase 1 — product analytics overview (users + usage_events only).
+ * Auth: X-Service-Token (same SERVICE_TOKEN as internal usage routes).
+ */
+router.get('/admin/analytics/overview', requireServiceToken, async (req, res, next) => {
+  try {
+    const overview = await analyticsService.getOverview();
+    res.json(overview);
   } catch (err) {
     next(err);
   }
