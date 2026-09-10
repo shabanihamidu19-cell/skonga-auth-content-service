@@ -43,14 +43,42 @@ router.get('/admin/stats', requireServiceToken, async (req, res, next) => {
   }
 });
 
-/**
- * Phase 1 — product analytics overview (users + usage_events only).
- * Auth: X-Service-Token (same SERVICE_TOKEN as internal usage routes).
- */
+/** Phase 1 — snapshot KPIs */
 router.get('/admin/analytics/overview', requireServiceToken, async (req, res, next) => {
   try {
-    const overview = await analyticsService.getOverview();
-    res.json(overview);
+    res.json(await analyticsService.getOverview());
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Phase 2 — daily signups + DAU curve ?days=30 */
+router.get('/admin/analytics/growth', requireServiceToken, async (req, res, next) => {
+  try {
+    res.json(await analyticsService.getGrowth({ days: req.query.days }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Phase 2 — usage by action + daily series ?days=30&action=chat|scan|all */
+router.get('/admin/analytics/usage', requireServiceToken, async (req, res, next) => {
+  try {
+    res.json(
+      await analyticsService.getUsageSeries({
+        days: req.query.days,
+        action: req.query.action || 'all',
+      })
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Phase 2 — D1/D7 retention by signup cohort ?cohortDays=14 */
+router.get('/admin/analytics/retention', requireServiceToken, async (req, res, next) => {
+  try {
+    res.json(await analyticsService.getRetention({ cohortDays: req.query.cohortDays }));
   } catch (err) {
     next(err);
   }
