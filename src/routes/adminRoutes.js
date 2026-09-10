@@ -2,6 +2,7 @@
 const express = require('express');
 const userRepo = require('../repositories/userRepository');
 const subRepo = require('../repositories/subscriptionRepository');
+const analyticsController = require('../controllers/analyticsController');
 const { requireServiceToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -41,5 +42,12 @@ router.get('/admin/stats', requireServiceToken, async (req, res, next) => {
     next(err);
   }
 });
+
+/** Phase 1: product analytics overview (users + usage_events only). No Pro metrics. */
+router.get(
+  '/admin/analytics/overview',
+  requireServiceToken,
+  analyticsController.overview
+);
 
 module.exports = router;
