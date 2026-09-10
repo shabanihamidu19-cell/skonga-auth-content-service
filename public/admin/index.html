@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SKONGA Admin · Analytics</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --panel2: #182238;
+      --border: #243049;
+      --text: #e8eef9;
+      --muted: #8b9bb8;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --cyan: #22d3ee;
+      --violet: #a78bfa;
+      --radius: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2744 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 18, 32, 0.85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--violet));
+      display: grid; place-items: center; font-weight: 800; font-size: 14px;
+    }
+    h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    input, select, button {
+      font: inherit; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--panel2); color: var(--text); padding: 9px 12px;
+    }
+    input[type="password"] { min-width: 200px; }
+    button {
+      cursor: pointer; background: var(--accent); border-color: transparent;
+      font-weight: 600;
+    }
+    button.secondary { background: var(--panel2); border-color: var(--border); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+    .gate {
+      max-width: 420px; margin: 60px auto; padding: 28px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .gate h2 { margin: 0 0 8px; font-size: 1.2rem; }
+    .gate p { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    .gate .row { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .err {
+      background: rgba(244, 63, 94, 0.12); color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      padding: 10px 12px; border-radius: 10px; font-size: 0.88rem; margin-top: 12px;
+    }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 10px 18px;
+      color: var(--muted); font-size: 0.8rem; margin-bottom: 16px;
+    }
+    .meta strong { color: var(--text); font-weight: 600; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .card .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .value { font-size: 1.65rem; font-weight: 700; margin-top: 6px; }
+    .card .hint { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .panel h3 {
+      margin: 0 0 12px; font-size: 0.95rem; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .bars {
+      display: flex; align-items: flex-end; gap: 3px; height: 120px;
+      padding-top: 8px;
+    }
+    .bar-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;
+      justify-content: flex-end; min-width: 0;
+    }
+    .bar {
+      width: 100%; max-width: 18px; border-radius: 4px 4px 2px 2px;
+      background: linear-gradient(180deg, var(--accent), #1d4ed8);
+      min-height: 2px;
+    }
+    .bar.green { background: linear-gradient(180deg, var(--green), #15803d); }
+    .bar.cyan { background: linear-gradient(180deg, var(--cyan), #0891b2); }
+    .bar.amber { background: linear-gradient(180deg, var(--amber), #d97706); }
+    .tick {
+      font-size: 0.58rem; color: var(--muted); margin-top: 4px;
+      white-space: nowrap; overflow: hidden; max-width: 100%;
+    }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+    }
+    th, td {
+      text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 0.72rem; font-weight: 600;
+      background: rgba(59, 130, 246, 0.15); color: #93c5fd;
+    }
+    .pill.ok { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+    .pill.warn { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+    .two {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 800px) {
+      .two { grid-template-columns: 1fr; }
+      input[type="password"] { min-width: 140px; }
+    }
+    .hidden { display: none !important; }
+    .loading { color: var(--muted); font-size: 0.9rem; padding: 24px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">SK</div>
+      <div>
+        <h1>SKONGA Admin</h1>
+        <div class="sub">Product analytics · Phase 3</div>
+      </div>
+    </div>
+    <div class="controls" id="toolbar" class="hidden">
+      <select id="days">
+        <option value="7">7 days</option>
+        <option value="14">14 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="60">60 days</option>
+      </select>
+      <button type="button" class="secondary" id="btnRefresh">Refresh</button>
+      <button type="button" class="secondary" id="btnLogout">Lock</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="gate" class="gate">
+      <h2>Admin access</h2>
+      <p>Enter the same <strong>SERVICE_TOKEN</strong> used by the AI backend (header <code>X-Service-Token</code>). Token stays in this browser only.</p>
+      <div class="row">
+        <label for="token" style="color:var(--muted);font-size:0.8rem">Service token</label>
+        <input id="token" type="password" placeholder="SERVICE_TOKEN" autocomplete="off" />
+        <button type="button" id="btnUnlock">Open dashboard</button>
+      </div>
+      <div id="gateErr" class="err hidden"></div>
+    </section>
+
+    <section id="dash" class="hidden">
+      <div class="meta" id="meta"></div>
+      <div id="loadMsg" class="loading hidden">Loading metrics…</div>
+      <div id="dashErr" class="err hidden"></div>
+
+      <div class="grid" id="kpi"></div>
+
+      <div class="two">
+        <div class="panel">
+          <h3>New users <span class="pill" id="signupPill">signups</span></h3>
+          <div class="bars" id="chartSignups"></div>
+        </div>
+        <div class="panel">
+          <h3>Daily active users <span class="pill ok">DAU</span></h3>
+          <div class="bars" id="chartDau"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Usage volume <span class="pill" id="usagePill">all actions</span></h3>
+        <div class="bars" id="chartUsage"></div>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h3>Usage by feature</h3>
+          <div id="usageTable"></div>
+        </div>
+        <div class="panel">
+          <h3>Retention (D1 / D7)</h3>
+          <div id="retentionSummary" style="margin-bottom:10px;color:var(--muted);font-size:0.85rem"></div>
+          <div id="retentionTable" style="max-height:280px;overflow:auto"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const KEY = 'skonga_admin_service_token';
+    const $ = (id) => document.getElementById(id);
+
+    function apiBase() {
+      // Same origin — dashboard is served by auth-content service
+      return '';
+    }
+
+    async function api(path, token) {
+      const res = await fetch(apiBase() + path, {
+        headers: { 'X-Service-Token': token, Accept: 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data.error || data.message || ('HTTP ' + res.status);
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    function fmt(n) {
+      if (n == null || Number.isNaN(n)) return '—';
+      return Number(n).toLocaleString();
+    }
+
+    function fmtPct(n) {
+      if (n == null) return '—';
+      return n + '%';
+    }
+
+    function shortDate(iso) {
+      if (!iso) return '';
+      const p = String(iso).slice(5); // MM-DD
+      return p;
+    }
+
+    function renderBars(el, series, valueKey, colorClass) {
+      if (!series || !series.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">No data yet</div>';
+        return;
+      }
+      const vals = series.map((s) => Number(s[valueKey] || s.value || 0));
+      const max = Math.max(1, ...vals);
+      const showTicks = series.length <= 16;
+      el.innerHTML = series.map((s, i) => {
+        const v = vals[i];
+        const h = Math.max(2, Math.round((v / max) * 100));
+        const tick = showTicks || i === 0 || i === series.length - 1 || i % Math.ceil(series.length / 6) === 0
+          ? '<div class="tick" title="' + s.date + '">' + shortDate(s.date) + '</div>'
+          : '<div class="tick">&nbsp;</div>';
+        return (
+          '<div class="bar-wrap" title="' + s.date + ': ' + v + '">' +
+            '<div class="bar ' + (colorClass || '') + '" style="height:' + h + '%"></div>' +
+            tick +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    function renderKpis(overview) {
+      const u = overview.users || {};
+      const a = overview.activity || {};
+      const us = overview.usage || {};
+      const cards = [
+        { label: 'Total users', value: u.total, hint: 'All accounts' },
+        { label: 'New today', value: u.newToday, hint: 'UTC day' },
+        { label: 'New 7d', value: u.newLast7d, hint: 'Last 7 days' },
+        { label: 'DAU', value: a.dau, hint: 'Active today' },
+        { label: 'WAU', value: a.wau, hint: 'Active 7d' },
+        { label: 'MAU', value: a.mau, hint: 'Active 30d' },
+        { label: 'Chats (today)', value: us.chat && us.chat.today, hint: 'Units today' },
+        { label: 'Scans (today)', value: us.scan && us.scan.today, hint: 'Vision / OCR' },
+      ];
+      $('kpi').innerHTML = cards.map((c) =>
+        '<div class="card"><div class="label">' + c.label + '</div>' +
+        '<div class="value">' + fmt(c.value) + '</div>' +
+        '<div class="hint">' + c.hint + '</div></div>'
+      ).join('');
+    }
+
+    function renderUsageTable(byAction) {
+      const rows = [
+        ['chat', 'Chat'],
+        ['scan', 'Scan / vision'],
+        ['rag_query', 'Library RAG'],
+        ['file_analysis', 'File analysis'],
+        ['image_generation', 'Image gen'],
+      ];
+      let html = '<table><thead><tr><th>Feature</th><th>Units</th><th>Users</th></tr></thead><tbody>';
+      for (const [key, label] of rows) {
+        const r = (byAction && byAction[key]) || {};
+        html += '<tr><td>' + label + '</td><td>' + fmt(r.units) + '</td><td>' + fmt(r.users) + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      $('usageTable').innerHTML = html;
+    }
+
+    function renderRetention(ret) {
+      const s = ret.summary || {};
+      $('retentionSummary').textContent =
+        'Avg D1: ' + fmtPct(s.avgD1Rate) + ' · Avg D7: ' + fmtPct(s.avgD7Rate) +
+        ' · (null rate = cohort not mature yet)';
+      const cohorts = ret.cohorts || [];
+      if (!cohorts.length) {
+        $('retentionTable').innerHTML = '<div style="color:var(--muted)">No cohorts yet</div>';
+        return;
+      }
+      let html = '<table><thead><tr><th>Signup day</th><th>Size</th><th>D1</th><th>D7</th></tr></thead><tbody>';
+      for (const c of cohorts.slice().reverse()) {
+        html += '<tr><td>' + c.date + '</td><td>' + fmt(c.size) + '</td>' +
+          '<td>' + fmtPct(c.d1Rate) + '</td><td>' + fmtPct(c.d7Rate) + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      $('retentionTable').innerHTML = html;
+    }
+
+    async function loadAll() {
+      const token = localStorage.getItem(KEY);
+      if (!token) return;
+      const days = $('days').value || '30';
+      $('loadMsg').classList.remove('hidden');
+      $('dashErr').classList.add('hidden');
+      try {
+        const [overview, growth, usage, retention] = await Promise.all([
+          api('/api/admin/analytics/overview', token),
+          api('/api/admin/analytics/growth?days=' + days, token),
+          api('/api/admin/analytics/usage?days=' + days + '&action=all', token),
+          api('/api/admin/analytics/retention?cohortDays=14', token),
+        ]);
+
+        $('meta').innerHTML =
+          '<span>Generated <strong>' + (overview.generatedAt || '—') + '</strong></span>' +
+          '<span>DB <strong>' + (overview.db || '—') + '</strong>' +
+          (overview.durable ? ' <span class="pill ok">durable</span>' : ' <span class="pill warn">ephemeral</span>') +
+          '</span>' +
+          '<span>Window <strong>' + days + 'd</strong></span>';
+
+        renderKpis(overview);
+        renderBars($('chartSignups'), growth.signups || [], 'newUsers', 'green');
+        renderBars($('chartDau'), growth.activeUsers || [], 'dau', 'cyan');
+        renderBars($('chartUsage'), usage.series || [], 'units', 'amber');
+        renderUsageTable(usage.byAction);
+        renderRetention(retention);
+        $('usagePill').textContent = days + 'd · all actions';
+      } catch (e) {
+        $('dashErr').textContent = e.message || String(e);
+        $('dashErr').classList.remove('hidden');
+        if (e.status === 401) lock();
+      } finally {
+        $('loadMsg').classList.add('hidden');
+      }
+    }
+
+    function unlock(token) {
+      localStorage.setItem(KEY, token);
+      $('gate').classList.add('hidden');
+      $('dash').classList.remove('hidden');
+      $('toolbar').classList.remove('hidden');
+      loadAll();
+    }
+
+    function lock() {
+      localStorage.removeItem(KEY);
+      $('dash').classList.add('hidden');
+      $('toolbar').classList.add('hidden');
+      $('gate').classList.remove('hidden');
+      $('token').value = '';
+    }
+
+    $('btnUnlock').addEventListener('click', async () => {
+      const token = ($('token').value || '').trim();
+      $('gateErr').classList.add('hidden');
+      if (!token) {
+        $('gateErr').textContent = 'Paste SERVICE_TOKEN first.';
+        $('gateErr').classList.remove('hidden');
+        return;
+      }
+      try {
+        await api('/api/admin/analytics/overview', token);
+        unlock(token);
+      } catch (e) {
+        $('gateErr').textContent = e.message || 'Invalid token or service down';
+        $('gateErr').classList.remove('hidden');
+      }
+    });
+
+    $('btnRefresh').addEventListener('click', loadAll);
+    $('btnLogout').addEventListener('click', lock);
+    $('days').addEventListener('change', loadAll);
+    $('token').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('btnUnlock').click();
+    });
+
+    // Auto-open if token already saved
+    if (localStorage.getItem(KEY)) {
+      unlock(localStorage.getItem(KEY));
+    }
+  </script>
+</body>
+</html>
