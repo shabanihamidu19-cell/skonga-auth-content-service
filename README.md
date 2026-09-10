@@ -20,6 +20,7 @@ cp .env.example .env
 npm install
 npm start
 # → http://localhost:4000/health
+# → http://localhost:4000/admin   (analytics dashboard)
 ```
 
 ## API
@@ -43,13 +44,18 @@ npm start
 
 ### Admin (X-Service-Token)
 
+**Dashboard UI:** open `/admin` in a browser, paste `SERVICE_TOKEN` once (stored in localStorage only).
+
 ```bash
 export TOKEN=your_SERVICE_TOKEN
 export HOST=https://YOUR-AUTH-CONTENT-HOST
+# UI
+open "$HOST/admin"
 ```
 
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/admin` | Phase 3 analytics dashboard (HTML) |
 | GET | `/api/admin/users` | List users + plan |
 | GET | `/api/admin/stats` | User count |
 | GET | `/api/admin/analytics/overview` | Phase 1 KPIs |
@@ -64,19 +70,6 @@ curl -s -H "X-Service-Token: $TOKEN" "$HOST/api/admin/analytics/usage?days=30&ac
 curl -s -H "X-Service-Token: $TOKEN" "$HOST/api/admin/analytics/retention?cohortDays=14"
 ```
 
-**Overview fields** (from `users` + `usage_events` only):
-
-| Field | Source |
-|-------|--------|
-| `users.total` | `COUNT(*)` users |
-| `users.newToday` / `newLast7d` / `newLast30d` | `users.created_at` (UTC) |
-| `activity.dau` / `wau` / `mau` | distinct `usage_events.user_id` |
-| `usage.*` | `SUM(units)` total + today |
-
-**Growth:** daily `newUsers` + daily `dau` for `?days=1..90`  
-**Usage:** `byAction` window totals + daily `units` series (`action=all|chat|scan|…`)  
-**Retention:** signup cohorts with D1/D7 return rates (null until mature)
-
 Requires `SERVICE_TOKEN` in env. Prefer `DATABASE_URL` (Postgres) in production.
 
 ## Security
@@ -84,7 +77,8 @@ Requires `SERVICE_TOKEN` in env. Prefer `DATABASE_URL` (Postgres) in production.
 2. Passwords hashed with **bcrypt**
 3. Usage ≠ subscription (separate tables)
 4. Quota exceeded → `403` + `QUOTA_EXCEEDED`
-5. Admin analytics → **X-Service-Token** only
+5. Admin analytics + dashboard APIs → **X-Service-Token** only
+6. Dashboard is not public data — without a valid token, charts do not load
 
 ## Stack
 Node 18+ · Express · SQLite (`node:sqlite`) or Postgres (`DATABASE_URL`) · JWT · bcryptjs
