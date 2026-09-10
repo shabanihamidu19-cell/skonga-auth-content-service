@@ -1,4 +1,5 @@
 'use strict';
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const env = require('./config/env');
@@ -14,6 +15,7 @@ const { errorMiddleware } = require('./utils/errors');
 const { uploadRoot } = require('./services/fileStorage');
 
 const app = express();
+const publicRoot = path.join(__dirname, '..', 'public');
 
 app.set('trust proxy', 1);
 
@@ -50,9 +52,19 @@ app.get('/health', async (req, res) => {
     db: db.driver,
     durable: db.driver === 'postgres',
     learn: true,
+    admin: true,
     time: new Date().toISOString(),
   });
 });
+
+// Phase 3 — Admin analytics dashboard (token entered in browser; APIs still require X-Service-Token)
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(publicRoot, 'admin', 'index.html'));
+});
+app.get('/admin/', (req, res) => {
+  res.sendFile(path.join(publicRoot, 'admin', 'index.html'));
+});
+app.use('/admin', express.static(path.join(publicRoot, 'admin')));
 
 app.use('/api', authRoutes);
 app.use('/api', contentRoutes);
