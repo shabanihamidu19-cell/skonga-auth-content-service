@@ -168,8 +168,8 @@
         <div class="sub">Product analytics · Phase 3</div>
       </div>
     </div>
-    <div class="controls" id="toolbar" class="hidden">
-      <select id="days">
+    <div class="controls hidden" id="toolbar">
+      <select id="days" aria-label="Time window">
         <option value="7">7 days</option>
         <option value="14">14 days</option>
         <option value="30" selected>30 days</option>
@@ -233,13 +233,8 @@
     const KEY = 'skonga_admin_service_token';
     const $ = (id) => document.getElementById(id);
 
-    function apiBase() {
-      // Same origin — dashboard is served by auth-content service
-      return '';
-    }
-
     async function api(path, token) {
-      const res = await fetch(apiBase() + path, {
+      const res = await fetch(path, {
         headers: { 'X-Service-Token': token, Accept: 'application/json' },
       });
       const data = await res.json().catch(() => ({}));
@@ -264,8 +259,7 @@
 
     function shortDate(iso) {
       if (!iso) return '';
-      const p = String(iso).slice(5); // MM-DD
-      return p;
+      return String(iso).slice(5);
     }
 
     function renderBars(el, series, valueKey, colorClass) {
@@ -425,7 +419,6 @@
       if (e.key === 'Enter') $('btnUnlock').click();
     });
 
-    // Auto-open if token already saved
     if (localStorage.getItem(KEY)) {
       unlock(localStorage.getItem(KEY));
     }
