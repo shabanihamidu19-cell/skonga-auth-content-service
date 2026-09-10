@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const usageController = require('../controllers/usageController');
+const proController = require('../controllers/proController');
 const { requireAuth, requireServiceToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -11,5 +12,9 @@ router.get('/usage/check', requireAuth, usageController.check);
 // Server-to-server (AI backend)
 router.post('/internal/usage/record', requireServiceToken, usageController.internalRecord);
 router.get('/internal/usage/check', requireServiceToken, usageController.internalCheck);
+
+// Phase 4 — Pro sync from payment backend
+router.post('/internal/pro/grant', requireServiceToken, proController.grant);
+router.get('/internal/pro/status', requireServiceToken, proController.status);
 
 module.exports = router;
