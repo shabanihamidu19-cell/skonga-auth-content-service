@@ -12,7 +12,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const learnRoutes = require('./routes/learnRoutes');
 const { apiLimiter } = require('./middleware/rateLimitMiddleware');
 const { errorMiddleware } = require('./utils/errors');
-const { uploadRoot } = require('./services/fileStorage');
+const { uploadRoot, storageStatus } = require('./services/fileStorage');
 
 const app = express();
 const publicRoot = path.join(__dirname, '..', 'public');
@@ -46,18 +46,20 @@ app.get('/health', async (req, res) => {
   } catch {
     dbOk = false;
   }
+  const storage = storageStatus();
   res.status(dbOk ? 200 : 503).json({
     status: dbOk ? 'ok' : 'degraded',
     service: 'skonga-auth-content',
     db: db.driver,
     durable: db.driver === 'postgres',
+    storage: storage.driver,
+    storagePublic: storage.publicBase,
     learn: true,
     admin: true,
     time: new Date().toISOString(),
   });
 });
 
-// Phase 3 — Admin analytics dashboard (token entered in browser; APIs still require X-Service-Token)
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(publicRoot, 'admin', 'index.html'));
 });
@@ -72,6 +74,7 @@ app.use('/api', usageRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', learnRoutes);
 
+// Local files only (when storage.driver === local)
 app.use('/files', express.static(uploadRoot));
 
 app.use((req, res) => res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' }));
