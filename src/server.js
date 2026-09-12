@@ -2,9 +2,16 @@
 const env = require('./config/env');
 const db = require('./config/db');
 const app = require('./app');
+const progressRepo = require('./repositories/progressRepository');
 
 async function main() {
   await db.ready;
+  try {
+    await progressRepo.ensureSchema();
+    console.log('   Learn progress schema: ready');
+  } catch (err) {
+    console.warn('   Learn progress schema warn:', err.message);
+  }
   app.listen(env.port, () => {
     console.log(`✅ SKONGA auth-content-service on port ${env.port} (${env.nodeEnv})`);
     console.log(`   DB driver: ${db.driver}${db.driver === 'postgres' ? ' (durable)' : ''}`);
@@ -12,6 +19,7 @@ async function main() {
       console.log(`   Path: ${env.databasePath}`);
     }
     console.log(`   Quotas free chat/day: ${env.quotas.free.chat}`);
+    console.log('   Learn algorithm: v2 (time-aware path)');
   });
 }
 
