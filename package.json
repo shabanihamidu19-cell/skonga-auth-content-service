@@ -1,6 +1,6 @@
 {
   "name": "skonga-auth-content-service",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SKONGA identity, content ownership, usage quotas and entitlements (source of truth)",
   "main": "src/server.js",
   "type": "commonjs",
@@ -13,6 +13,7 @@
     "test": "node --test tests/auth.test.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.699.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
