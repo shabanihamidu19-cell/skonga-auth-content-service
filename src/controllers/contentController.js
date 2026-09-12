@@ -1,6 +1,6 @@
 'use strict';
 const contentService = require('../services/contentService');
-const { publicKey } = require('../services/fileStorage');
+const { persistUpload } = require('../services/fileStorage');
 
 async function create(req, res, next) {
   try {
@@ -8,21 +8,44 @@ async function create(req, res, next) {
     let storageKey = null;
     let mimeType = null;
     let size = null;
+    let fileUrl = null;
+
     if (req.file) {
-      storageKey = publicKey(req.file.filename);
-      mimeType = req.file.mimetype;
-      size = req.file.size;
+      const saved = await persistUpload(req);
+      if (saved) {
+        storageKey = saved.storageKey;
+        mimeType = saved.mimeType;
+        size = saved.size;
+        fileUrl = saved.url;
+      }
     }
+
+    let meta = metadata;
+    if (typeof meta === 'string') {
+      try {
+        meta = JSON.parse(meta);
+      } catch {
+        meta = { raw: meta };
+      }
+    }
+    if (fileUrl) {
+      meta = { ...(meta || {}), fileUrl };
+    }
+
     const item = await contentService.createContent(req.user.id, {
-      type: type || (req.file ? 'image' : 'chat'),
+      type: type || (req.file ? (mimeType && mimeType.startsWith('image/') ? 'image' : 'file') : 'chat'),
       title,
       body,
-      metadata,
+      metadata: meta,
       storageKey,
       mimeType,
       size,
     });
-    res.status(201).json({ content: item });
+
+    res.status(201).json({
+      content: item,
+      fileUrl: fileUrl || null,
+    });
   } catch (err) {
     next(err);
   }
